@@ -8,10 +8,10 @@
 import UIKit
 
 class ViewController: UIViewController {
-
-    private lazy var label: UILabel = {
+    
+    private lazy var tempLabel: UILabel = {
         let label = UILabel()
-        label.text = "28"
+        label.text = "-"
         label.font = .boldSystemFont(ofSize: 25)
         label.textColor = .white
         
@@ -32,33 +32,69 @@ class ViewController: UIViewController {
         super.viewDidLoad()
         
         view.backgroundColor = .blue
-        view.addSubview(label)
+        view.addSubview(tempLabel)
         view.addSubview(cityLabel)
         
-        NSLayoutConstraint.activate([
-            label.centerXAnchor.constraint(equalTo: view.centerXAnchor),
-            label.centerYAnchor.constraint(equalTo: view.centerYAnchor),
-            
-            cityLabel.centerXAnchor.constraint(equalTo: view.centerXAnchor),
-            cityLabel.bottomAnchor.constraint(equalTo: label.topAnchor, constant: -5)
-        ])
+        setupConstraints()
+        
         
         cityLabel.translatesAutoresizingMaskIntoConstraints = false
-        label.translatesAutoresizingMaskIntoConstraints = false
+        tempLabel.translatesAutoresizingMaskIntoConstraints = false
         
-        DispatchQueue.global().async {
-            ApiManager().load() { [weak self] weather in
-                guard let weather else { return }
-                DispatchQueue.main.async {
-                    self?.label.text = "\(weather.main.temp)"
-                }
-                
-            }
-        }
+        
+        
+        
+        load()
         
         
     }
-
-
+    
+    
+    private func setupConstraints() {
+        NSLayoutConstraint.activate([
+            tempLabel.centerXAnchor.constraint(equalTo: view.centerXAnchor),
+            tempLabel.centerYAnchor.constraint(equalTo: view.centerYAnchor),
+            
+            cityLabel.centerXAnchor.constraint(equalTo: view.centerXAnchor),
+            cityLabel.bottomAnchor.constraint(equalTo: tempLabel.topAnchor, constant: -5)
+        ])
+    }
+    
+    
+    private func load() {
+        
+        ApiManager().load() { [weak self] result in
+            DispatchQueue.main.async {
+                switch result {
+                case .success(let weather):
+                    if let weather {
+                        DispatchQueue.main.async {
+                            self?.tempLabel.text = "\(weather.main.temp)"
+                        }
+                    } else {
+                        self?.show(error: nil)
+                    }
+                case .failure(let error):
+                    self?.show(error: error)
+                }
+                
+            }
+            
+        }
+        
+    }
+    
+    
+    private func show(error: Error?) {
+        let message = error == nil ? "Data is empty" : error?.localizedDescription
+        let controller = UIAlertController(title: "Error",
+                                           message: message,
+                                           preferredStyle: .alert)
+        
+        controller.addAction(UIAlertAction(title: "OK", style: .default))
+        present(controller, animated: true)
+        
+        
+    }
+    
 }
-
